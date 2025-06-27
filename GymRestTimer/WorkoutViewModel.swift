@@ -115,11 +115,13 @@ class WorkoutViewModel: ObservableObject {
     func handleAppMovedToBackground() {
         print("App moved to background.")
         
-        // Device lock is handled separately via protectedDataWillBecomeUnavailable notification
-        if !isDeviceLocked {
-            let screenBrightness = UIScreen.main.brightness
-            if screenBrightness > 0 {
-                handleAppMinimized()
+        // and will set appWentToBackgroundViaMinimize = false
+        appWentToBackgroundViaMinimize = true
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [weak self] in
+            guard let self = self else { return }
+            if self.appWentToBackgroundViaMinimize && !self.isDeviceLocked {
+                self.handleAppMinimized()
             }
         }
         
@@ -130,6 +132,9 @@ class WorkoutViewModel: ObservableObject {
 
     func handleAppMovedToForeground() {
         print("App moved to foreground.")
+        
+        appWentToBackgroundViaMinimize = false
+        
         if let endDate = timerEndDate {
             // If the timer was running, check its status
             if Date() >= endDate {
@@ -145,6 +150,7 @@ class WorkoutViewModel: ObservableObject {
     func handleDeviceLocked() {
         print("Device locked detected.")
         isDeviceLocked = true
+        appWentToBackgroundViaMinimize = false // Cancel any pending minimize detection
         
         if isAlarmActive {
             print("Auto-dismissing alarm due to device lock.")
