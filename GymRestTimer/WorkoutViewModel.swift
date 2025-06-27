@@ -10,6 +10,7 @@
 
 import SwiftUI
 import Combine
+import UIKit
 
 @MainActor // Ensures UI-related updates happen on the main thread
 class WorkoutViewModel: ObservableObject {
@@ -39,6 +40,8 @@ class WorkoutViewModel: ObservableObject {
     // MARK: - Private Properties
     private var timer: AnyCancellable?
     private var timerEndDate: Date?
+    private var isDeviceLocked = false
+    private var appWentToBackgroundViaMinimize = false
 
     init() {
         // Set initial time string when the app starts
@@ -75,6 +78,18 @@ class WorkoutViewModel: ObservableObject {
         isAlarmActive = false
         isResting = false // This will trigger the stopRestTimer() logic via the didSet observer
     }
+    
+    func endWorkout() {
+        print("Ending workout session.")
+        isAlarmActive = false
+        isResting = false
+        timer?.cancel()
+        timer = nil
+        timerEndDate = nil
+        progress = 1.0
+        timeString = formatTime(restDuration)
+        NotificationManager.shared.cancelNotifications()
+    }
 
     // MARK: - UI Update Logic
     private func updateUI() {
@@ -98,7 +113,14 @@ class WorkoutViewModel: ObservableObject {
 
     // MARK: - App Lifecycle Handling
     func handleAppMovedToBackground() {
-        print("App moved to background. Timer is running via scheduled notification.")
+        print("App moved to background.")
+        
+        let screenBrightness = UIScreen.main.brightness
+        if screenBrightness > 0 {
+            handleAppMinimized()
+        }
+        
+        print("Timer is running via scheduled notification.")
         // The foreground timer will pause, which is fine. The scheduled notification is our guarantee.
         // We save the end date so we can sync up when the app returns.
     }
@@ -114,6 +136,31 @@ class WorkoutViewModel: ObservableObject {
                 // Otherwise, just resume the UI updates
                 updateUI()
             }
+        }
+    }
+    
+    func handleDeviceLocked() {
+        print("Device locked detected.")
+        isDeviceLocked = true
+        
+        if isAlarmActive {
+            print("Auto-dismissing alarm due to device lock.")
+            stopAlarmAndReset()
+        }
+    }
+    
+    func handleDeviceUnlocked() {
+        print("Device unlocked detected.")
+        isDeviceLocked = false
+    }
+    
+    func handleAppMinimized() {
+        print("App minimized to home screen.")
+        appWentToBackgroundViaMinimize = true
+        
+        if !isResting && !isAlarmActive {
+            print("Auto-starting rest timer due to app minimize.")
+            isResting = true
         }
     }
     
