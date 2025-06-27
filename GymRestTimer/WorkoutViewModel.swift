@@ -40,11 +40,34 @@ class WorkoutViewModel: ObservableObject {
     // MARK: - Private Properties
     private var timer: AnyCancellable?
     private var timerEndDate: Date?
-    private var isDeviceLocked = false
+    private var isScreenOff = false
+    private var brightnessObserver: AnyCancellable?
 
     init() {
         // Set initial time string when the app starts
         self.timeString = formatTime(restDuration)
+        
+        brightnessObserver = NotificationCenter.default
+            .publisher(for: UIScreen.brightnessDidChangeNotification)
+            .sink { [weak self] _ in
+                self?.handleBrightnessChange()
+            }
+    }
+    
+    deinit {
+        brightnessObserver?.cancel()
+    }
+    
+    // MARK: - Screen Off Detection
+    private func handleBrightnessChange() {
+        let currentBrightness = UIScreen.main.brightness
+        print("Brightness changed to: \(currentBrightness)")
+        
+        if currentBrightness == 0 {
+            handleScreenOff()
+        } else if isScreenOff {
+            handleScreenOn()
+        }
     }
 
     // MARK: - Timer Control
@@ -114,14 +137,14 @@ class WorkoutViewModel: ObservableObject {
     func handleAppMovedToBackground() {
         print("App moved to background.")
         
-        let isDeviceUnlocked = UIApplication.shared.isProtectedDataAvailable
+        let currentBrightness = UIScreen.main.brightness
         
-        if isDeviceUnlocked {
-            print("App minimized to home screen (device unlocked).")
-            handleAppMinimized()
+        if currentBrightness == 0 {
+            print("Screen off detected (power button pressed).")
+            handleScreenOff()
         } else {
-            print("Device locked detected via isProtectedDataAvailable.")
-            handleDeviceLocked()
+            print("App minimized to home screen (screen still on).")
+            handleAppMinimized()
         }
         
         print("Timer is running via scheduled notification.")
@@ -144,19 +167,19 @@ class WorkoutViewModel: ObservableObject {
         }
     }
     
-    func handleDeviceLocked() {
-        print("Device locked detected.")
-        isDeviceLocked = true
+    func handleScreenOff() {
+        print("Screen turned off (power button pressed).")
+        isScreenOff = true
         
         if isAlarmActive {
-            print("Auto-dismissing alarm due to device lock.")
+            print("Auto-dismissing alarm due to screen off.")
             stopAlarmAndReset()
         }
     }
     
-    func handleDeviceUnlocked() {
-        print("Device unlocked detected.")
-        isDeviceLocked = false
+    func handleScreenOn() {
+        print("Screen turned on.")
+        isScreenOff = false
     }
     
     func handleAppMinimized() {
