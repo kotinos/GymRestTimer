@@ -41,7 +41,6 @@ class WorkoutViewModel: ObservableObject {
     private var timer: AnyCancellable?
     private var timerEndDate: Date?
     private var isDeviceLocked = false
-    private var appWentToBackgroundViaMinimize = false
 
     init() {
         // Set initial time string when the app starts
@@ -115,14 +114,14 @@ class WorkoutViewModel: ObservableObject {
     func handleAppMovedToBackground() {
         print("App moved to background.")
         
-        // and will set appWentToBackgroundViaMinimize = false
-        appWentToBackgroundViaMinimize = true
+        let isDeviceUnlocked = UIApplication.shared.isProtectedDataAvailable
         
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [weak self] in
-            guard let self = self else { return }
-            if self.appWentToBackgroundViaMinimize && !self.isDeviceLocked {
-                self.handleAppMinimized()
-            }
+        if isDeviceUnlocked {
+            print("App minimized to home screen (device unlocked).")
+            handleAppMinimized()
+        } else {
+            print("Device locked detected via isProtectedDataAvailable.")
+            handleDeviceLocked()
         }
         
         print("Timer is running via scheduled notification.")
@@ -132,8 +131,6 @@ class WorkoutViewModel: ObservableObject {
 
     func handleAppMovedToForeground() {
         print("App moved to foreground.")
-        
-        appWentToBackgroundViaMinimize = false
         
         if let endDate = timerEndDate {
             // If the timer was running, check its status
@@ -150,7 +147,6 @@ class WorkoutViewModel: ObservableObject {
     func handleDeviceLocked() {
         print("Device locked detected.")
         isDeviceLocked = true
-        appWentToBackgroundViaMinimize = false // Cancel any pending minimize detection
         
         if isAlarmActive {
             print("Auto-dismissing alarm due to device lock.")
@@ -165,7 +161,6 @@ class WorkoutViewModel: ObservableObject {
     
     func handleAppMinimized() {
         print("App minimized to home screen.")
-        appWentToBackgroundViaMinimize = true
         
         if isAlarmActive {
             print("Auto-dismissing alarm due to app minimize.")

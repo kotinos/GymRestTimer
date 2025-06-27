@@ -31,12 +31,6 @@ struct ContentView: View {
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
             viewModel.handleAppMovedToForeground()
         }
-        .onReceive(NotificationCenter.default.publisher(for: UIApplication.protectedDataWillBecomeUnavailableNotification)) { _ in
-            viewModel.handleDeviceLocked()
-        }
-        .onReceive(NotificationCenter.default.publisher(for: UIApplication.protectedDataDidBecomeAvailableNotification)) { _ in
-            viewModel.handleDeviceUnlocked()
-        }
     }
 
     // MARK: - Subviews
