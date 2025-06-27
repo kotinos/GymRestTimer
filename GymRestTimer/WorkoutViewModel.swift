@@ -115,9 +115,12 @@ class WorkoutViewModel: ObservableObject {
     func handleAppMovedToBackground() {
         print("App moved to background.")
         
-        let screenBrightness = UIScreen.main.brightness
-        if screenBrightness > 0 {
-            handleAppMinimized()
+        // Device lock is handled separately via protectedDataWillBecomeUnavailable notification
+        if !isDeviceLocked {
+            let screenBrightness = UIScreen.main.brightness
+            if screenBrightness > 0 {
+                handleAppMinimized()
+            }
         }
         
         print("Timer is running via scheduled notification.")
@@ -158,7 +161,11 @@ class WorkoutViewModel: ObservableObject {
         print("App minimized to home screen.")
         appWentToBackgroundViaMinimize = true
         
-        if !isResting && !isAlarmActive {
+        if isAlarmActive {
+            print("Auto-dismissing alarm due to app minimize.")
+            stopAlarmAndReset()
+        }
+        else if !isResting {
             print("Auto-starting rest timer due to app minimize.")
             isResting = true
         }
