@@ -46,22 +46,53 @@ struct ContentView: View {
     
     private var timerDisplay: some View {
         ZStack {
-            Circle()
-                .stroke(lineWidth: 20)
-                .opacity(0.1)
-                .foregroundColor(.accentColor)
+            Color(.systemGray6)
+                .ignoresSafeArea()
             
-            Circle()
-                .trim(from: 0.0, to: viewModel.progress)
-                .stroke(style: StrokeStyle(lineWidth: 20, lineCap: .round, lineJoin: .round))
-                .foregroundColor(.accentColor)
-                .rotationEffect(Angle(degrees: 270.0))
-                .animation(.linear, value: viewModel.progress)
-            
-            Text(viewModel.timeString)
-                .font(.system(size: 60, weight: .bold, design: .monospaced))
+            ZStack {
+                ForEach(0..<60, id: \.self) { tick in
+                    Rectangle()
+                        .fill(Color.blue.opacity(0.6))
+                        .frame(width: tick % 5 == 0 ? 4 : 2, height: tick % 5 == 0 ? 20 : 12)
+                        .offset(y: -140)
+                        .rotationEffect(.degrees(Double(tick) * 6))
+                }
+                
+                Circle()
+                    .stroke(Color.gray.opacity(0.2), lineWidth: 30)
+                    .frame(width: 280, height: 280)
+                
+                Circle()
+                    .fill(Color.white)
+                    .frame(width: 200, height: 200)
+                    .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 5)
+                
+                Circle()
+                    .trim(from: 0.0, to: viewModel.progress)
+                    .stroke(
+                        Color.blue.opacity(0.8),
+                        style: StrokeStyle(lineWidth: 30, lineCap: .round)
+                    )
+                    .frame(width: 280, height: 280)
+                    .rotationEffect(.degrees(-90))
+                    .animation(.easeInOut(duration: 0.5), value: viewModel.progress)
+                
+                if viewModel.progress > 0 {
+                    Circle()
+                        .fill(Color.white)
+                        .frame(width: 20, height: 20)
+                        .shadow(color: .black.opacity(0.2), radius: 3, x: 0, y: 2)
+                        .offset(y: -140)
+                        .rotationEffect(.degrees(Double(viewModel.progress) * 360 - 90))
+                        .animation(.easeInOut(duration: 0.5), value: viewModel.progress)
+                }
+                
+                Text(viewModel.timeString)
+                    .font(.system(size: 48, weight: .bold, design: .rounded))
+                    .foregroundColor(.black)
+            }
         }
-        .frame(width: 300, height: 300)
+        .frame(width: 350, height: 350)
     }
     
     private var actionButton: some View {
