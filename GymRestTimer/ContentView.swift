@@ -77,15 +77,13 @@ struct ContentView: View {
                     .rotationEffect(.degrees(-90))
                     .animation(.easeInOut(duration: 0.5), value: viewModel.progress)
                 
-                if viewModel.progress > 0 {
-                    Circle()
-                        .fill(Color.white)
-                        .frame(width: 20, height: 20)
-                        .shadow(color: .black.opacity(0.2), radius: 3, x: 0, y: 2)
-                        .offset(y: -140)
-                        .rotationEffect(.degrees(Double(viewModel.progress) * 360 - 90))
-                        .animation(.easeInOut(duration: 0.5), value: viewModel.progress)
-                }
+                Circle()
+                    .fill(Color.white)
+                    .frame(width: 20, height: 20)
+                    .shadow(color: .black.opacity(0.2), radius: 3, x: 0, y: 2)
+                    .offset(y: -140)
+                    .rotationEffect(.degrees(Double(viewModel.progress) * 360))
+                    .animation(.easeInOut(duration: 0.5), value: viewModel.progress)
                 
                 Text(viewModel.timeString)
                     .font(.system(size: 48, weight: .bold, design: .rounded))
