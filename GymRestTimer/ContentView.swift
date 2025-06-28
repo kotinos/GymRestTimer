@@ -13,6 +13,7 @@ struct ContentView: View {
                 header
                 timerDisplay
                 actionButton
+                endWorkoutButton
                 settings
             }
             .padding()
@@ -26,6 +27,9 @@ struct ContentView: View {
         
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.willResignActiveNotification)) { _ in
             viewModel.handleAppMovedToBackground()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.didEnterBackgroundNotification)) { _ in
+            viewModel.handleAppDidEnterBackground()
         }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
             viewModel.handleAppMovedToForeground()
@@ -70,6 +74,21 @@ struct ContentView: View {
                 .padding()
                 .frame(maxWidth: .infinity)
                 .background(viewModel.isResting ? .red : .green)
+                .foregroundColor(.white)
+                .cornerRadius(15)
+        }
+    }
+    
+    private var endWorkoutButton: some View {
+        Button(action: {
+            viewModel.endWorkout()
+        }) {
+            Text("END WORKOUT")
+                .font(.title3)
+                .fontWeight(.bold)
+                .padding()
+                .frame(maxWidth: .infinity)
+                .background(.orange)
                 .foregroundColor(.white)
                 .cornerRadius(15)
         }

@@ -10,6 +10,7 @@
 
 import SwiftUI
 import Combine
+import UIKit
 
 @MainActor // Ensures UI-related updates happen on the main thread
 class WorkoutViewModel: ObservableObject {
@@ -39,10 +40,17 @@ class WorkoutViewModel: ObservableObject {
     // MARK: - Private Properties
     private var timer: AnyCancellable?
     private var timerEndDate: Date?
+    private var isScreenOff = false
+    private var minimizeTimer: Timer?
 
     init() {
         // Set initial time string when the app starts
         self.timeString = formatTime(restDuration)
+    }
+    
+    deinit {
+        minimizeTimer?.invalidate()
+        minimizeTimer = nil
     }
 
     // MARK: - Timer Control
@@ -75,6 +83,18 @@ class WorkoutViewModel: ObservableObject {
         isAlarmActive = false
         isResting = false // This will trigger the stopRestTimer() logic via the didSet observer
     }
+    
+    func endWorkout() {
+        print("Ending workout session.")
+        isAlarmActive = false
+        isResting = false
+        timer?.cancel()
+        timer = nil
+        timerEndDate = nil
+        progress = 1.0
+        timeString = formatTime(restDuration)
+        NotificationManager.shared.cancelNotifications()
+    }
 
     // MARK: - UI Update Logic
     private func updateUI() {
@@ -98,13 +118,29 @@ class WorkoutViewModel: ObservableObject {
 
     // MARK: - App Lifecycle Handling
     func handleAppMovedToBackground() {
-        print("App moved to background. Timer is running via scheduled notification.")
+        print("App moved to background.")
+        
+        minimizeTimer = Timer.scheduledTimer(withTimeInterval: 2.5, repeats: false) { [weak self] timer in
+            // Timer fired - assume power button press (screen lock)
+            print("Timer expired (2.5s) - likely power button press (screen lock)")
+            self?.handleScreenOff()
+            self?.minimizeTimer = nil
+        }
+        
+        print("Started 2.5s detection timer. Timer is running via scheduled notification.")
         // The foreground timer will pause, which is fine. The scheduled notification is our guarantee.
         // We save the end date so we can sync up when the app returns.
     }
 
     func handleAppMovedToForeground() {
         print("App moved to foreground.")
+        
+        if let timer = minimizeTimer {
+            timer.invalidate()
+            minimizeTimer = nil
+            print("Cleaned up minimize timer on foreground return.")
+        }
+        
         if let endDate = timerEndDate {
             // If the timer was running, check its status
             if Date() >= endDate {
@@ -114,6 +150,47 @@ class WorkoutViewModel: ObservableObject {
                 // Otherwise, just resume the UI updates
                 updateUI()
             }
+        }
+    }
+    
+    func handleAppDidEnterBackground() {
+        print("App did enter background.")
+        
+        if let timer = minimizeTimer {
+            timer.invalidate()
+            minimizeTimer = nil
+            print("Intentional app minimize detected (within 2.5s window).")
+            handleAppMinimized()
+        } else {
+            print("App entered background after timer expired - power button press already handled.")
+        }
+    }
+    
+    func handleScreenOff() {
+        print("Screen turned off (power button pressed).")
+        isScreenOff = true
+        
+        if isAlarmActive {
+            print("Auto-dismissing alarm due to screen off.")
+            stopAlarmAndReset()
+        }
+    }
+    
+    func handleScreenOn() {
+        print("Screen turned on.")
+        isScreenOff = false
+    }
+    
+    func handleAppMinimized() {
+        print("App minimized to home screen.")
+        
+        if isAlarmActive {
+            print("Auto-dismissing alarm due to app minimize.")
+            stopAlarmAndReset()
+        }
+        else if !isResting {
+            print("Auto-starting rest timer due to app minimize.")
+            isResting = true
         }
     }
     
