@@ -120,14 +120,14 @@ class WorkoutViewModel: ObservableObject {
     func handleAppMovedToBackground() {
         print("App moved to background.")
         
-        minimizeTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: false) { [weak self] timer in
+        minimizeTimer = Timer.scheduledTimer(withTimeInterval: 2.5, repeats: false) { [weak self] timer in
             // Timer fired - assume power button press (screen lock)
-            print("Timer expired - likely power button press (screen lock)")
+            print("Timer expired (2.5s) - likely power button press (screen lock)")
             self?.handleScreenOff()
             self?.minimizeTimer = nil
         }
         
-        print("Timer is running via scheduled notification.")
+        print("Started 2.5s detection timer. Timer is running via scheduled notification.")
         // The foreground timer will pause, which is fine. The scheduled notification is our guarantee.
         // We save the end date so we can sync up when the app returns.
     }
@@ -138,7 +138,7 @@ class WorkoutViewModel: ObservableObject {
         if let timer = minimizeTimer {
             timer.invalidate()
             minimizeTimer = nil
-            print("Cleaned up minimize timer on foreground.")
+            print("Cleaned up minimize timer on foreground return.")
         }
         
         if let endDate = timerEndDate {
@@ -159,8 +159,10 @@ class WorkoutViewModel: ObservableObject {
         if let timer = minimizeTimer {
             timer.invalidate()
             minimizeTimer = nil
-            print("Intentional app minimize detected.")
+            print("Intentional app minimize detected (within 2.5s window).")
             handleAppMinimized()
+        } else {
+            print("App entered background after timer expired - power button press already handled.")
         }
     }
     
