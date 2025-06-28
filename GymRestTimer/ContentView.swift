@@ -68,7 +68,7 @@ struct ContentView: View {
                     .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 5)
                 
                 Circle()
-                    .trim(from: 0.0, to: viewModel.progress)
+                    .trim(from: 0.0, to: 1.0 - viewModel.progress)
                     .stroke(
                         Color.blue.opacity(0.8),
                         style: StrokeStyle(lineWidth: 30, lineCap: .round)
