@@ -95,7 +95,7 @@ struct ContentView: View {
     }
     
     private var settings: some View {
-        Stepper("Rest for $Int(viewModel.restDuration)) seconds",
+        Stepper("Rest for \(Int(viewModel.restDuration)) seconds",
                 value: $viewModel.restDuration,
                 in: 15...300,
                 step: 15)
