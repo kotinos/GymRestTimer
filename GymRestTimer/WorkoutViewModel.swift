@@ -41,33 +41,16 @@ class WorkoutViewModel: ObservableObject {
     private var timer: AnyCancellable?
     private var timerEndDate: Date?
     private var isScreenOff = false
-    private var brightnessObserver: AnyCancellable?
+    private var minimizeTimer: Timer?
 
     init() {
         // Set initial time string when the app starts
         self.timeString = formatTime(restDuration)
-        
-        brightnessObserver = NotificationCenter.default
-            .publisher(for: UIScreen.brightnessDidChangeNotification)
-            .sink { [weak self] _ in
-                self?.handleBrightnessChange()
-            }
     }
     
     deinit {
-        brightnessObserver?.cancel()
-    }
-    
-    // MARK: - Screen Off Detection
-    private func handleBrightnessChange() {
-        let currentBrightness = UIScreen.main.brightness
-        print("Brightness changed to: \(currentBrightness)")
-        
-        if currentBrightness == 0 {
-            handleScreenOff()
-        } else if isScreenOff {
-            handleScreenOn()
-        }
+        minimizeTimer?.invalidate()
+        minimizeTimer = nil
     }
 
     // MARK: - Timer Control
@@ -137,14 +120,11 @@ class WorkoutViewModel: ObservableObject {
     func handleAppMovedToBackground() {
         print("App moved to background.")
         
-        let currentBrightness = UIScreen.main.brightness
-        
-        if currentBrightness == 0 {
-            print("Screen off detected (power button pressed).")
-            handleScreenOff()
-        } else {
-            print("App minimized to home screen (screen still on).")
-            handleAppMinimized()
+        minimizeTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: false) { [weak self] timer in
+            // Timer fired - assume power button press (screen lock)
+            print("Timer expired - likely power button press (screen lock)")
+            self?.handleScreenOff()
+            self?.minimizeTimer = nil
         }
         
         print("Timer is running via scheduled notification.")
@@ -155,6 +135,12 @@ class WorkoutViewModel: ObservableObject {
     func handleAppMovedToForeground() {
         print("App moved to foreground.")
         
+        if let timer = minimizeTimer {
+            timer.invalidate()
+            minimizeTimer = nil
+            print("Cleaned up minimize timer on foreground.")
+        }
+        
         if let endDate = timerEndDate {
             // If the timer was running, check its status
             if Date() >= endDate {
@@ -164,6 +150,17 @@ class WorkoutViewModel: ObservableObject {
                 // Otherwise, just resume the UI updates
                 updateUI()
             }
+        }
+    }
+    
+    func handleAppDidEnterBackground() {
+        print("App did enter background.")
+        
+        if let timer = minimizeTimer {
+            timer.invalidate()
+            minimizeTimer = nil
+            print("Intentional app minimize detected.")
+            handleAppMinimized()
         }
     }
     
