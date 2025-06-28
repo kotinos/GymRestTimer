@@ -82,7 +82,7 @@ struct ContentView: View {
                     .frame(width: 20, height: 20)
                     .shadow(color: .black.opacity(0.2), radius: 3, x: 0, y: 2)
                     .offset(y: -140)
-                    .rotationEffect(.degrees(Double(viewModel.progress) * 360))
+                    .rotationEffect(.degrees(Double(1.0 - viewModel.progress) * 360))
                     .animation(.easeInOut(duration: 0.5), value: viewModel.progress)
                 
                 Text(viewModel.timeString)
